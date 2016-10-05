@@ -155,9 +155,10 @@ locate_var = function(vars, meta_data)
   rownames(ret) = vars
   for(ii in 1:length(vars))
   {
-    if(substr(vars[ii], 1,1) == "[" && substr(vars[ii], length(vars[ii]),length(vars[ii])) == "]")
+    temp = check_bracket(vars[ii])
+    if(temp$flag)
     {
-      vars[ii] = substr(vars[ii], 2,length(vars[ii])-1)
+      vars[ii] = temp$x
       if(vars[ii] %in% names(meta_data))
       {
         idx = match(vars[ii], names(meta_data))
@@ -191,10 +192,13 @@ merge_data = function(params, data_list, meta_data)
   ret$err_msg = err_msg
   ret$merged_data = merged_data
   ret$vars_loc = NA
-  
-  params = gsub("(", "", params)
-  params = gsub(")", "", params)
+
+  for(ii in 1:params)
+  {
+    params[ii] = check_parathesis(params[ii])$x
+  }
   params = unlist(strsplit(params, split = " "))
+  params = params[params != ""]
   
   vars_loc = locate_var(params, meta_data)
   na.idx = which(is.na(vars_loc[,1]))
@@ -256,7 +260,7 @@ merge_data = function(params, data_list, meta_data)
   return(ret)
 }
 
-dispatch_cmd = function(cmd, params, vars_loc)
+dispatch_cmd = function(cmd, params, vars_loc, meta_data)
 {
   ret = list()
   ret$err_msg = NA
@@ -264,7 +268,7 @@ dispatch_cmd = function(cmd, params, vars_loc)
   
   if(cmd == "CORR")
   {
-    temp = dispatch_CORR_cmd(params, vars_loc)
+    temp = dispatch_CORR_cmd(params, vars_loc, meta_data)
     ret$err_msg = temp$err_msg
     ret$expr = temp$expr
   }elseif(cmd == "SUMMARY")
@@ -328,7 +332,7 @@ execute_stat = function(command, data_list, meta_data)
     return(ret)
   }
   
-  cmd_expr = dispatch_cmd(cmd, params, vars_loc)
+  cmd_expr = dispatch_cmd(cmd, params, vars_loc, meta_data)
   
   #############
   #############
